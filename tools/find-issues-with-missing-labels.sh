@@ -14,7 +14,7 @@ REPO='Rahul-renovate-testing/repro-33701'
 
 ISSUE_TITLE="Issues with missing labels"
 
-for FILTER in "$TYPE_LABELS_FILTER" "$PRIORITY_LABELS_FILTER"; do
+for FILTER in "$PRIORITY_LABELS_FILTER"; do
   # Extract the label type from the filter
   LABEL_TYPE=$(echo "$FILTER" | cut -d ':' -f 2 | cut -d '-' -f 1)
 
