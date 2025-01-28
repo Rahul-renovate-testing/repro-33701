@@ -10,7 +10,7 @@ HAS_ISSUES_MISSING_LABELS=false
 
 ISSUE_BODY="# Label check action\n"
 
-REPO='renovatebot/renovate'
+REPO='Rahul-renovate-testing/repro-33701'
 
 ISSUE_TITLE="Issues with missing labels"
 
