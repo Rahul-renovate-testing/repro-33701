@@ -59,7 +59,7 @@ if [ "$ISSUES_MISSING_TYPE" != "[]" ]; then
     ISSUE_BODY="$ISSUE_BODY## Found $ISSUE_COUNT $ISSUE_SINGULAR_PLURAL missing issue type:\n$FORMATTED_OUTPUT\n"
 fi
 
-if [ "$HAS_ISSUES_MISSING_LABELS" = false && "$HAS_ISSUES_MISSING_ISSSUE_TYPE" = false ]; then
+if [ "$HAS_ISSUES_MISSING_LABELS" = false && "$HAS_ISSUES_MISSING_ISSUE_TYPE" = false ]; then
     echo "All checked issues have labels and type."
     ISSUE_BODY="$ISSUE_BODY All checked issues are correctly labeled and have issue type.\n"
 fi
