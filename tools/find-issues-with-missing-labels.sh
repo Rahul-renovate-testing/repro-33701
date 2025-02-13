@@ -6,7 +6,7 @@
 PRIORITY_LABELS_FILTER='-label:priority-1-critical -label:priority-2-high -label:priority-3-medium -label:priority-4-low'
 ISSUE_TYPE_FILTER='-type:Bug -type:Feature -type:Task'
 
-HAS_ISSUES_MISSING_LABELS=false
+HAS_ISSUES=false
 
 ISSUE_BODY="# Label check action\n"
 
@@ -34,11 +34,11 @@ for FILTER in "$PRIORITY_LABELS_FILTER" "$ISSUE_TYPE_FILTER"; do
         ISSUE_SINGULAR_PLURAL=$(if [ "$ISSUE_COUNT" -eq 1 ]; then echo "issue"; else echo "issues"; fi)
         
         # Append the "list of issues without labels" to the issue body
-        ISSUE_BODY="$ISSUE_BODY## Found $ISSUE_COUNT $ISSUE_SINGULAR_PLURAL missing \`$LABEL_TYPE:\`:\n$FORMATTED_OUTPUT\n"
+        ISSUE_BODY="$ISSUE_BODY## Found $ISSUE_COUNT $ISSUE_SINGULAR_PLURAL missing \`$TYPE:\`:\n$FORMATTED_OUTPUT\n"
     fi
 done
 
-if [ "$HAS_ISSUES_MISSING_LABELS" = false ]; then
+if [ "$HAS_ISSUES" = false ]; then
     echo "All checked issues have labels and type."
     ISSUE_BODY="$ISSUE_BODY All checked issues are correctly labeled and have a type.\n"
 fi
@@ -58,7 +58,7 @@ else
     gh issue reopen "$ISSUE_NUMBER" --repo $REPO || { echo "Failed to reopen issue"; exit 1; }
 fi
 
-if [ "$HAS_ISSUES_MISSING_LABELS" = false ]; then
+if [ "$HAS_ISSUES" = false ]; then
     exit 0
 fi
 
