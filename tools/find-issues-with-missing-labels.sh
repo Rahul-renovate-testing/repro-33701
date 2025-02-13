@@ -6,7 +6,7 @@
 PRIORITY_LABELS_FILTER='-label:priority-1-critical -label:priority-2-high -label:priority-3-medium -label:priority-4-low'
 ISSUE_TYPE_FILTER='-type:Bug -type:Feature -type:Task'
 
-HAS_ISSUES=false
+HAS_ISSUES_MISSING_LABELS=false
 
 ISSUE_BODY="# Label check action\n"
 
@@ -14,33 +14,53 @@ REPO='Rahul-renovate-testing/repro-33701'
 
 ISSUE_TITLE="Issues with missing labels"
 
-for FILTER in "$PRIORITY_LABELS_FILTER" "$ISSUE_TYPE_FILTER"; do
-    # Extract the label type from the filter
-    TYPE=$(echo "$FILTER" | cut -d ':' -f 2 | cut -d '-' -f 1)
-    
-    # Fetch issues that match the filter
-    ISSUES=$(gh issue list --repo $REPO --limit 100000 -s open -S "$FILTER" --json "number,title") || { echo "Failed to fetch issues without $TYPE"; exit 1; }
-    # Ignore the Issue from the "Find issues with missing labels" Action
-    ISSUES=$(echo "$ISSUES" | jq --arg title "$ISSUE_TITLE" 'map(select(.title != $title))')
-    
-    if [ "$ISSUES" != "[]" ]; then
-        HAS_ISSUES=true
-        
-        # Create a list of issue numbers
-        FORMATTED_OUTPUT=$(echo "$ISSUES" | jq -r '.[].number' | sed 's/^/- https:\/\/redirect.github.com\/renovatebot\/renovate\/issues\//')
-        
-        # Count the issues and decide if the output should be singular or plural
-        ISSUE_COUNT=$(echo "$ISSUES" | jq '. | length')
-        ISSUE_SINGULAR_PLURAL=$(if [ "$ISSUE_COUNT" -eq 1 ]; then echo "issue"; else echo "issues"; fi)
-        
-        # Append the "list of issues without labels" to the issue body
-        ISSUE_BODY="$ISSUE_BODY## Found $ISSUE_COUNT $ISSUE_SINGULAR_PLURAL missing \`$TYPE:\`:\n$FORMATTED_OUTPUT\n"
-    fi
-done
+# Extract the label type from the filter
+LABEL_TYPE=$(echo "$PRIORITY_LABELS_FILTER" | cut -d ':' -f 2 | cut -d '-' -f 1)
 
-if [ "$HAS_ISSUES" = false ]; then
+# Fetch issues that match the filter
+ISSUES_MISSING_LABEL=$(gh issue list --repo $REPO --limit 100000 -s open -S "$FILTER" --json "number,title") || { echo "Failed to fetch issues without $LABEL_TYPE labels"; exit 1; }
+# Ignore the Issue from the "Find issues with missing labels" Action
+ISSUES_MISSING_LABEL=$(echo "$ISSUES_MISSING_LABEL" | jq --arg title "$ISSUE_TITLE" 'map(select(.title != $title))')
+
+if [ "$ISSUES_MISSING_LABEL" != "[]" ]; then
+    HAS_ISSUES_MISSING_LABELS=true
+    
+    # Create a list of issue numbers
+    FORMATTED_OUTPUT=$(echo "$ISSUES_MISSING_LABEL" | jq -r '.[].number' | sed 's/^/- https:\/\/redirect.github.com\/renovatebot\/renovate\/issues\//')
+    
+    # Count the issues and decide if the output should be singular or plural
+    ISSUE_COUNT=$(echo "$ISSUES_MISSING_LABEL" | jq '. | length')
+    ISSUE_SINGULAR_PLURAL=$(if [ "$ISSUE_COUNT" -eq 1 ]; then echo "issue"; else echo "issues"; fi)
+    
+    # Append the "list of issues without labels" to the issue body
+    ISSUE_BODY="$ISSUE_BODY## Found $ISSUE_COUNT $ISSUE_SINGULAR_PLURAL missing \`$LABEL_TYPE:\` labels:\n$FORMATTED_OUTPUT\n"
+fi
+
+# Extract the issue type from the filter
+LABEL_TYPE=$(echo "$ISSUE_TYPE_FILTER" | cut -d ':' -f 2)
+
+# Fetch issues that match the filter
+ISSUES_MISSING_TYPE=$(gh issue list --repo $REPO --limit 100000 -s open -S "$FILTER" --json "number,title") || { echo "Failed to fetch issues without $LABEL_TYPE"; exit 1; }
+# Ignore the Issue from the "Find issues with missing labels" Action
+ISSUES_MISSING_TYPE=$(echo "$ISSUES_MISSING_TYPE" | jq --arg title "$ISSUE_TITLE" 'map(select(.title != $title))')
+
+if [ "$ISSUES_MISSING_TYPE" != "[]" ]; then
+    HAS_ISSUES_MISSING_LABELS=true
+    
+    # Create a list of issue numbers
+    FORMATTED_OUTPUT=$(echo "$ISSUES_MISSING_TYPE" | jq -r '.[].number' | sed 's/^/- https:\/\/redirect.github.com\/renovatebot\/renovate\/issues\//')
+    
+    # Count the issues and decide if the output should be singular or plural
+    ISSUE_COUNT=$(echo "$ISSUES_MISSING_TYPE" | jq '. | length')
+    ISSUE_SINGULAR_PLURAL=$(if [ "$ISSUE_COUNT" -eq 1 ]; then echo "issue"; else echo "issues"; fi)
+    
+    # Append the "list of issues without labels" to the issue body
+    ISSUE_BODY="$ISSUE_BODY## Found $ISSUE_COUNT $ISSUE_SINGULAR_PLURAL missing \`$LABEL_TYPE:\`:\n$FORMATTED_OUTPUT\n"
+fi
+
+if [ "$HAS_ISSUES_MISSING_LABELS" = false ]; then
     echo "All checked issues have labels and type."
-    ISSUE_BODY="$ISSUE_BODY All checked issues are correctly labeled and have a type.\n"
+    ISSUE_BODY="$ISSUE_BODY All checked issues are correctly labeled and have issue type.\n"
 fi
 
 LABEL_CHECK_ISSUE_EXISTS=$(gh search issues --repo $REPO --json "number,author,title" | jq --arg title "$ISSUE_TITLE" 'map(select(.title == $title and .author.type == "Bot"))') || { echo "Failed to fetch existing label check issue"; exit 1; }
@@ -58,7 +78,7 @@ else
     gh issue reopen "$ISSUE_NUMBER" --repo $REPO || { echo "Failed to reopen issue"; exit 1; }
 fi
 
-if [ "$HAS_ISSUES" = false ]; then
+if [ "$HAS_ISSUES_MISSING_LABELS" = false ]; then
     exit 0
 fi
 
@@ -69,4 +89,3 @@ echo -e "$ISSUE_BODY"
 echo "Found issues without labels. Please check the issue(s) listed above. Exiting the action."
 
 exit 1
-
