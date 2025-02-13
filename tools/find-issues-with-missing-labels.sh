@@ -7,6 +7,7 @@ PRIORITY_LABELS_FILTER='-label:priority-1-critical -label:priority-2-high -label
 ISSUE_TYPE_FILTER='-type:Bug -type:Feature -type:Task'
 
 HAS_ISSUES_MISSING_LABELS=false
+HAS_ISSUES_MISSING_ISSUE_TYPE=false
 
 ISSUE_BODY="# Label check action\n"
 
@@ -18,7 +19,7 @@ ISSUE_TITLE="Issues with missing labels"
 LABEL_TYPE=$(echo "$PRIORITY_LABELS_FILTER" | cut -d ':' -f 2 | cut -d '-' -f 1)
 
 # Fetch issues that match the filter
-ISSUES_MISSING_LABEL=$(gh issue list --repo $REPO --limit 100000 -s open -S "$FILTER" --json "number,title") || { echo "Failed to fetch issues without $LABEL_TYPE labels"; exit 1; }
+ISSUES_MISSING_LABEL=$(gh issue list --repo $REPO --limit 100000 -s open -S "$PRIORITY_LABELS_FILTER" --json "number,title") || { echo "Failed to fetch issues without $LABEL_TYPE labels"; exit 1; }
 # Ignore the Issue from the "Find issues with missing labels" Action
 ISSUES_MISSING_LABEL=$(echo "$ISSUES_MISSING_LABEL" | jq --arg title "$ISSUE_TITLE" 'map(select(.title != $title))')
 
@@ -40,12 +41,12 @@ fi
 LABEL_TYPE=$(echo "$ISSUE_TYPE_FILTER" | cut -d ':' -f 2)
 
 # Fetch issues that match the filter
-ISSUES_MISSING_TYPE=$(gh issue list --repo $REPO --limit 100000 -s open -S "$FILTER" --json "number,title") || { echo "Failed to fetch issues without $LABEL_TYPE"; exit 1; }
+ISSUES_MISSING_TYPE=$(gh issue list --repo $REPO --limit 100000 -s open -S "$ISSUE_TYPE_FILTER" --json "number,title") || { echo "Failed to fetch issues without $LABEL_TYPE"; exit 1; }
 # Ignore the Issue from the "Find issues with missing labels" Action
 ISSUES_MISSING_TYPE=$(echo "$ISSUES_MISSING_TYPE" | jq --arg title "$ISSUE_TITLE" 'map(select(.title != $title))')
 
 if [ "$ISSUES_MISSING_TYPE" != "[]" ]; then
-    HAS_ISSUES_MISSING_LABELS=true
+    HAS_ISSUES_MISSING_ISSUE_TYPE=true
     
     # Create a list of issue numbers
     FORMATTED_OUTPUT=$(echo "$ISSUES_MISSING_TYPE" | jq -r '.[].number' | sed 's/^/- https:\/\/redirect.github.com\/renovatebot\/renovate\/issues\//')
@@ -55,10 +56,10 @@ if [ "$ISSUES_MISSING_TYPE" != "[]" ]; then
     ISSUE_SINGULAR_PLURAL=$(if [ "$ISSUE_COUNT" -eq 1 ]; then echo "issue"; else echo "issues"; fi)
     
     # Append the "list of issues without labels" to the issue body
-    ISSUE_BODY="$ISSUE_BODY## Found $ISSUE_COUNT $ISSUE_SINGULAR_PLURAL missing issue type\n$FORMATTED_OUTPUT\n"
+    ISSUE_BODY="$ISSUE_BODY## Found $ISSUE_COUNT $ISSUE_SINGULAR_PLURAL missing issue type:\n$FORMATTED_OUTPUT\n"
 fi
 
-if [ "$HAS_ISSUES_MISSING_LABELS" = false ]; then
+if [ "$HAS_ISSUES_MISSING_LABELS" = false && "$HAS_ISSUES_MISSING_ISSSUE_TYPE" = false ]; then
     echo "All checked issues have labels and type."
     ISSUE_BODY="$ISSUE_BODY All checked issues are correctly labeled and have issue type.\n"
 fi
